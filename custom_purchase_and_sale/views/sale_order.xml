@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+       <record id="purchase_and_sale_order_form_view" model="ir.ui.view">
+           <field name="name">purchase_and_sale_order_form_view</field>
+           <field name="model">sale.order</field>
+           <field name="inherit_id" ref="sale.view_order_form"/>
+           <field name="arch" type="xml">
+               <xpath expr="//button[@name='action_cancel']" position="after">
+                   <button string="Crear orden por error" name="copy_error_order" type="object" class="btn btn-secondary" attrs="{'invisible': ['|','|',('x_status_error_crm','=',False),('folio_pedido','=',False),('state','not in',['sale','done'])]}"/>
+               </xpath>
+               <xpath expr="//field[@name='client_order_ref']" position="after">
+                   <field name="x_branch_order_id"/>
+               </xpath>
+               <xpath expr="//field[@name='payment_term_id']" position="after">
+                   <field name="x_status_error_crm" domain="[('name','like','Error')]" options="{'no_create':True}"/>
+               </xpath>
+               <xpath expr="//field[@name='mid_layer_id']" position="after">
+                   <field name="x_is_custom" invisible="1"/>
+                   <field name="x_shapelist_domian_ids" attrs="{'readonly': [('x_is_custom','=',False)]}"/>
+               </xpath>
+               <xpath expr="//field[@name='main_layer_id']" position="attributes">
+                   <attribute name="attrs">{'readonly': [('x_is_custom','=',False)]}</attribute>
+               </xpath>
+               <xpath expr="//field[@name='mid_layer_id']" position="attributes">
+                   <attribute name="attrs">{'readonly': [('x_is_custom','=',False)]}</attribute>
+               </xpath>
+           </field>
+       </record>
+    </data>
+</odoo>

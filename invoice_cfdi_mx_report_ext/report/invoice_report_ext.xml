@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <data>
+     <template id="report_invoice_document_mx_ext" inherit_id="l10n_mx_edi.report_invoice_document_mx">
+        <xpath expr="//t[3]" position="before">
+          <t  t-if="res_company.parent_id">
+            <strong>MATRIZ: </strong> <span t-esc="res_company.parent_id.name"></span>
+            <p><strong>RFC: </strong><span t-esc="res_company.parent_id.vat"></span>
+            <strong>Expedición: </strong><span t-esc="res_company.parent_id.zip"></span><br/>
+            </p>
+          </t>
+        </xpath>
+     </template>
+
+  </data>
+</odoo>

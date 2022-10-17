@@ -1,0 +1,196 @@
+<odoo>
+    <template id="portal_my_details" inherit_id="portal.portal_my_details" priority="100">
+        <xpath expr="//div[hasclass('o_portal_details')]//div[hasclass('row')]" position="inside">
+
+            <!--Genero-->
+            <div t-attf-class="form-group #{error.get('x_studio_gnero') and 'o_has_error' or ''} col-xl-6">
+                <label class="col-form-label label-optional" for="x_studio_gnero">Genero</label>
+                <select id="x_studio_gnero" name="x_studio_gnero" t-attf-class="form-control #{error.get('x_studio_gnero') and 'is-invalid' or ''}">
+                    <option value="">...</option>
+                    <t t-foreach="genders or {}" t-as="gender">
+                        <option t-att-value="gender" t-att-selected="'selected' if gender == x_studio_gnero or gender == partner.x_studio_gnero else None">
+                            <t t-esc="genders[gender]"/>
+                        </option>
+                    </t>
+                </select>
+            </div>
+            <div t-attf-class="form-group #{error.get('x_studio_cumpleaos') and 'o_has_error' or ''} col-xl-6">
+                <label class="col-form-label label-optional" for="x_studio_cumpleaos">Fecha de nacimiento</label>
+                <input type="date" name="x_studio_cumpleaos" t-attf-class="form-control #{error.get('x_studio_cumpleaos') and 'is-invalid' or ''}" t-att-value="x_studio_cumpleaos or partner.x_studio_cumpleaos" />
+            </div>
+            <div t-attf-class="form-group #{error.get('p_occupation') and 'o_has_error' or ''} col-xl-6">
+                <label class="col-form-label label-optional" for="p_occupation">Ocupación y/o profesión</label>
+                <input type="text" name="p_occupation" t-attf-class="form-control #{error.get('p_occupation') and 'is-invalid' or ''}" t-att-value="p_occupation or partner.p_occupation" />
+            </div>
+            <div t-attf-class="form-group #{error.get('p_physical_activity') and 'o_has_error' or ''} col-xl-6">
+                <label class="col-form-label label-optional">¿Realiza usted alguna actividad física?</label>
+                <div class="d-flex align-baseline">
+                    <div t-attf-class="form-check form-check-inline">
+                        <input id="p_physical_activity_si" type="radio" name="p_physical_activity" t-attf-class="form-check-input #{error.get('p_physical_activity') and 'is-invalid' or ''}" t-att-checked="'checked' if p_physical_activity == True or (partner.p_physical_activity == True) else None" value="True"/>
+                        <label class="form-check-label" for="p_physical_activity_si">Sí</label>
+                    </div>
+                    <div t-attf-class="form-check form-check-inline">
+                        <input id="p_physical_activity_no" type="radio" name="p_physical_activity" t-attf-class="form-check-input #{error.get('p_physical_activity') and 'is-invalid' or ''}" t-att-checked="'checked' if p_physical_activity == False or (partner.p_physical_activity == False and p_physical_activity != True) else None" value="False"/>
+                        <label class="form-check-label" for="p_physical_activity_no">No</label>
+                    </div>
+                </div>
+            </div>
+            <div id="p_physical_activity_true_div" t-attf-class="form-group #{error.get('p_physical_activity_true') and 'o_has_error' or ''} col-xl-6">
+                <label class="col-form-label label-optional" for="p_physical_activity_true">¿Cuál actividad física realiza?</label>
+                <input type="text" name="p_physical_activity_true" t-attf-class="form-control #{error.get('p_physical_activity_true') and 'is-invalid' or ''}" t-att-value="p_physical_activity_true or partner.p_physical_activity_true" />
+            </div>
+
+            <!--Mostramos las diferentes formas en que conocieron la empresa-->
+            <div onchange="changeVisibilityContact('x_studio_cmo_nos_contacta')" t-attf-class="form-group #{error.get('x_studio_cmo_nos_contacta') and 'o_has_error' or ''} col-xl-6">
+                <label class="col-form-label label-optional" for="x_studio_cmo_nos_contacta">¿Donde nos encontró?</label>
+                <select id="x_studio_cmo_nos_contacta" name="x_studio_cmo_nos_contacta" t-attf-class="form-control #{error.get('x_studio_cmo_nos_contacta') and 'is-invalid' or ''}">
+                    <option value="">...</option>
+                    <t t-foreach="how_contact_us or {}" t-as="media">
+                        <option t-att-value="media" t-att-selected="'selected' if media == x_studio_cmo_nos_contacta or media == partner.x_studio_cmo_nos_contacta else None">
+                            <t t-esc="how_contact_us[media]"/>
+                        </option>
+                    </t>
+                </select>
+            </div>
+
+            <div  id="x_studio_medio" t-attf-class="form-group #{error.get('x_studio_medio') and 'o_has_error' or ''} col-xl-6">
+                <label class="col-form-label label-optional" for="x_studio_medio">¿Donde nos encontró?</label>
+                <select name="x_studio_medio" t-attf-class="form-control #{error.get('x_studio_medio') and 'is-invalid' or ''}">
+                    <option value="">...</option>
+                    <t t-foreach="contact_internet or {}" t-as="media">
+                        <option t-att-value="media" t-att-selected="'selected' if media == x_studio_medio or media == partner.x_studio_medio else None">
+                            <t t-esc="contact_internet[media]"/>
+                        </option>
+                    </t>
+                </select>
+            </div>
+
+            <div  id="x_studio_medico" t-attf-class="form-group #{error.get('x_studio_medico') and 'o_has_error' or ''} col-xl-6">
+                <label class="col-form-label label-optional" for="x_studio_medico">Medico que refiere</label>
+                <select name="x_studio_medico"
+                        t-attf-class="form-control #{error.get('x_studio_medico') and 'is-invalid' or ''}">
+                    <t t-foreach="medics or []" t-as="medic">
+                        <option t-att-value="medic.id"
+                                t-att-selected="medic.id == int(x_studio_medico) if x_studio_medico else medic.id == partner.x_studio_medico.id">
+                            <t t-esc="medic.name"/>
+                        </option>
+                    </t>
+                </select>
+            </div>
+
+            <div  id="x_studio_nombre_del_paciente_que_lo_recomienda" t-attf-class="form-group #{error.get('x_studio_nombre_del_paciente_que_lo_recomienda') and 'o_has_error' or ''} col-xl-6">
+                <label class="col-form-label label-optional" for="x_studio_nombre_del_paciente_que_lo_recomienda">Paciente que lo recomienda</label>
+                <select name="x_studio_nombre_del_paciente_que_lo_recomienda"
+                        t-attf-class="form-control #{error.get('x_studio_nombre_del_paciente_que_lo_recomienda') and 'is-invalid' or ''}">
+                    <t t-foreach="patients or []" t-as="patient">
+                        <option t-att-value="patient.id"
+                                t-att-selected="patient.id == int(x_studio_nombre_del_paciente_que_lo_recomienda) if x_studio_nombre_del_paciente_que_lo_recomienda else patient.id == partner.x_studio_nombre_del_paciente_que_lo_recomienda.id">
+                            <t t-esc="patient.name"/>
+                        </option>
+                    </t>
+                </select>
+            </div>
+
+            <div id="x_studio_medio_otro" t-attf-class="form-group #{error.get('x_studio_medio_otro') and 'o_has_error' or ''} col-xl-6">
+                <label class="col-form-label label-optional" for="x_studio_medio_otro">Especifique</label>
+                <input type="text" name="x_studio_medio_otro" t-attf-class="form-control #{error.get('x_studio_medio_otro') and 'is-invalid' or ''}" t-att-value="x_studio_medio_otro or partner.x_studio_medio_otro" />
+            </div>
+
+            <div t-attf-class="form-group #{error.get('x_studio_altura_cm') and 'o_has_error' or ''} col-xl-6">
+                <label class="col-form-label label-optional" for="x_studio_altura_cm">Estatura (en metros)</label>
+                <input type="number" step="1" name="x_studio_altura_cm" t-attf-class="form-control #{error.get('x_studio_altura_cm') and 'is-invalid' or ''}" t-att-value="x_studio_altura_cm or partner.x_studio_altura_cm" />
+            </div>
+            <div t-attf-class="form-group #{error.get('x_studio_peso_kgs') and 'o_has_error' or ''} col-xl-6">
+                <label class="col-form-label label-optional" for="x_studio_peso_kgs">Peso (en kilogramos)</label>
+                <input type="number" step="1" name="x_studio_peso_kgs" t-attf-class="form-control #{error.get('x_studio_peso_kgs') and 'is-invalid' or ''}" t-att-value="x_studio_peso_kgs or partner.x_studio_peso_kgs" />
+            </div>
+            <div t-attf-class="form-group #{error.get('x_studio_talla') and 'o_has_error' or ''} col-xl-6">
+                <label class="col-form-label label-optional" for="x_studio_talla">Número de calzado</label>
+                <input type="number" name="x_studio_talla" t-attf-class="form-control #{error.get('x_studio_talla') and 'is-invalid' or ''}" t-att-value="x_studio_talla or partner.x_studio_talla" />
+            </div>
+            <div t-attf-class="form-group #{error.get('main_complaints') and 'o_has_error' or ''} col-xl-6">
+                <label class="col-form-label label-optional">Principales molestias</label>
+                <div class="row">
+                    <t t-foreach="complaints or []" t-as="complaint">
+                        <t t-if="main_complaints">
+                            <t t-set="_main_complaints" t-value="[main_complaint[1] for main_complaint in main_complaints]"/>
+                        </t>
+                        <div class="col-6 form-check">
+                            <input t-attf-id="mc_#{complaint.id}" type="checkbox" name="main_complaints" t-att-value="complaint.id" t-att-checked="'checked' if (_main_complaints and (isinstance(_main_complaints, list) and complaint.id in _main_complaints)) or (partner.main_complaints and (complaint.id in [complaint.id for complaint in partner.main_complaints])) else None"/>
+                            <label class="form-check-label" t-attf-for="mc_#{complaint.id}"><t t-esc="complaint.name" /></label>
+                        </div>
+                    </t>
+                </div>
+            </div>
+            <div t-attf-class="form-group #{error.get('other_complaints') and 'o_has_error' or ''} col-xl-6">
+                <label class="col-form-label label-optional" for="other_complaints">Otras molestias</label>
+                <input type="text" name="other_complaints" t-attf-class="form-control #{error.get('other_complaints') and 'is-invalid' or ''}" t-att-value="other_complaints or partner.other_complaints" />
+            </div>
+            <div t-attf-class="form-group #{error.get('p_contact_you') and 'o_has_error' or ''} col-xl-6">
+                <label class="col-form-label label-optional">¿Desea que nos comuniquemos con usted?</label>
+                <div class="d-flex align-baseline">
+                    <div t-attf-class="form-check form-check-inline">
+                        <input id="p_contact_you_si" type="radio" name="p_contact_you" t-attf-class="form-check-input #{error.get('p_contact_you') and 'is-invalid' or ''}" t-att-checked="'checked' if (p_contact_you and p_contact_you == True) or (partner.p_contact_you == True) else None" value="True"/>
+                        <label class="form-check-label" for="p_contact_you_si">Sí</label>
+                    </div>
+                    <div t-attf-class="form-check form-check-inline">
+                        <input id="p_contact_you_no" type="radio" name="p_contact_you" t-attf-class="form-check-input #{error.get('p_contact_you') and 'is-invalid' or ''}" t-att-checked="'checked' if (p_contact_you and p_contact_you == False) or (partner.p_contact_you == False) else None" value="False"/>
+                        <label class="form-check-label" for="p_contact_you_no">No</label>
+                    </div>
+                </div>
+            </div>
+
+            <!--Javascript-->
+            <script>
+                (function() {
+                    start();
+                })();
+
+                function start(){
+                    this.changeVisibilityContact('x_studio_cmo_nos_contacta');
+                }
+
+                function changeVisibilityContact(select){
+                    var select = document.getElementById(select);
+                    var value= select.options[select.selectedIndex].value;
+                    var medio = document.getElementById('x_studio_medio');
+                    var medics = document.getElementById('x_studio_medico');
+                    var patient = document.getElementById('x_studio_nombre_del_paciente_que_lo_recomienda');
+                    var other = document.getElementById('x_studio_medio_otro');
+                    if(value == 'Internet'){
+                        medio.style.display = 'block';
+                        medics.style.display = 'none'
+                        patient.style.display = 'none';
+                        other.style.display = 'none';
+                    }
+                    else if(value == 'Médico / Especialista'){
+                        medio.style.display = 'none';
+                        medics.style.display = 'block';
+                        patient.style.display = 'none';
+                        other.style.display = 'none';
+                    }
+                    else if(value == 'Recomendado paciente'){
+                        medio.style.display = 'none';
+                        medics.style.display = 'none';
+                        patient.style.display = 'block';
+                        other.style.display = 'none';
+                    }
+                    else{
+                        medio.style.display = 'none';
+                        medics.style.display = 'none';
+                        patient.style.display = 'none';
+                        other.style.display = 'block';
+                    }
+                }
+            </script>
+        </xpath>
+
+        <xpath expr="//div[hasclass('o_portal_details')]//div[hasclass('row')]" position="after">
+            <div class="row mb-3">
+                <div class="col-xl-11 offset-xl-1">
+                    <span class="font-weight-bold" style="font-size: 0.8rem;">Sus datos serán protegidos por la empresa prestadora del servicio, quedando sometidos a la actual Ley de Protección de Datos Personales.</span>
+                </div>
+            </div>
+        </xpath>
+    </template>
+</odoo>
