@@ -21,6 +21,13 @@ class SaleOrder(models.Model):
                     rec.x_branch_order_id.sudo().write({'estatus_crm': values.get("estatus_crm")})
         return res
 
+    def action_cancel(self):
+        res = super(SaleOrder, self).action_cancel()
+        factory_order = self.env["sale.order"].sudo().search([("x_branch_order_id.id","=",self.id)])
+        if factory_order:
+            factory_order.sudo().action_cancel()
+        return res
+
     def create_estatus_crm(self):
         res = super(SaleOrder, self).create_estatus_crm()
         for rec in self:

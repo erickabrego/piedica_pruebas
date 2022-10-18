@@ -1,7 +1,6 @@
 from odoo.http import Controller, request, route, Response
 import logging
 import json
-
 _logger = logging.getLogger(__name__)
 
 
