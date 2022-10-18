@@ -7,14 +7,15 @@
            <field name="inherit_id" ref="sale.view_order_form"/>
            <field name="arch" type="xml">
                <xpath expr="//button[@name='action_cancel']" position="after">
-                   <button string="Crear orden por error" name="copy_error_order" type="object" class="btn btn-secondary" attrs="{'invisible': ['|','|',('x_status_error_crm','=',False),('folio_pedido','=',False),('state','not in',['sale','done'])]}"/>
+                   <button string="Crear orden por error" name="send_error_to_crm" type="object" class="btn btn-secondary" attrs="{'invisible': ['|',('folio_pedido','=',False),('state','not in',['sale','done'])]}"/>
                </xpath>
                <xpath expr="//field[@name='client_order_ref']" position="after">
                    <field name="x_branch_order_id"/>
+                   <field name="x_error_order" attrs="{'invisible':[('x_error_order','=',False)]}"/>
                </xpath>
-               <xpath expr="//field[@name='payment_term_id']" position="after">
-                   <field name="x_status_error_crm" domain="[('name','like','Error')]" options="{'no_create':True}"/>
-               </xpath>
+<!--               <xpath expr="//field[@name='payment_term_id']" position="after">-->
+<!--                   <field name="x_status_error_crm" domain="[('name','like','Error')]" options="{'no_create':True}"/>-->
+<!--               </xpath>-->
                <xpath expr="//field[@name='mid_layer_id']" position="after">
                    <field name="x_is_custom" invisible="1"/>
                    <field name="x_shapelist_domian_ids" attrs="{'readonly': [('x_is_custom','=',False)]}"/>

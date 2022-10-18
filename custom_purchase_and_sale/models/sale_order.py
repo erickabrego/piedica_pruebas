@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
-import datetime
+
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError
+import datetime
+import requests
 
 class SaleOrder(models.Model):
     _inherit = "sale.order"
@@ -9,6 +11,7 @@ class SaleOrder(models.Model):
     x_branch_order_id = fields.Many2one(comodel_name="sale.order", string="Orden sucursal", copy=False)
     x_status_error_crm = fields.Many2one(comodel_name="crm.status", string="Estado de error", copy=False)
     x_from_error_order = fields.Boolean(string="Proveniente de orden con error", copy=False)
+    x_error_order = fields.Many2one(comodel_name="sale.order", string="Orden con error", copy=False)
 
     def write(self, values):
         res = super(SaleOrder, self).write(values)
@@ -109,15 +112,29 @@ class SaleOrder(models.Model):
             }
             return notification
 
+    def send_error_to_crm(self):
+        crm_status = self.env["crm.status"].search(['|',('name','=','Error'),("code", "=", "2")], limit=1)
+        url = f"https://crmpiedica.com/api/api.php?id_pedido={self.folio_pedido}&id_etapa={crm_status.id}"
+        token = self.env['ir.config_parameter'].sudo().get_param("crm.sync.token")
+        headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {token}'}
+        response = requests.put(url, headers=headers)
+        self.message_post(body=response.content)
+        self.write({'estatus_crm': crm_status.id})
+        self.create_estatus_crm()
+        factory_order = self.env["sale.order"].sudo().search([("x_branch_order_id.id","=",self.id)], limit=1)
+        if factory_order:
+            factory_order.message_post(body=response.content)
+            factory_order.write({'estatus_crm': crm_status.id})
+            factory_order.create_estatus_crm()
 
     def copy_error_order(self):
         sale_order_id = self.copy()
+        sale_order_id.x_error_order = self.id
         sale_order_id.folio_pedido = self.folio_pedido
         sale_order_id.estatus_crm = self.estatus_crm
         sale_order_id.x_from_error_order = True
         sale_order_id.crm_status_history = [(0,0,{'status': self.x_status_error_crm.id, 'date': datetime.datetime.now()})]
         view = self.env.ref('sale.view_order_form')
-        print(sale_order_id)
         return {
             'name': 'Venta por error',
             'type': 'ir.actions.act_window',
