@@ -153,5 +153,3 @@ class SaleOrder(models.Model):
             'res_id': sale_order_id.id
         }
 
-
-
