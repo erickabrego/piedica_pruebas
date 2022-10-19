@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record forcecreate="True" id="ir_cron_irina_chat_24_before" model="ir.cron">
+            <field name="name">Notificación un dia antes con Irina</field>
+            <field name="model_id" ref="model_calendar_event"/>
+            <field name="state">code</field>
+            <field name="code">
+current_date = datetime.datetime.now() - datetime.timedelta(hours=1)
+events = env["calendar.event"].sudo().search([("start_date",">=",current_date),("start_date","&lt;",current_date.strftime("%d-%m-%Y 11:59:59"))])
+model.notify_irina_one_day_before(events)
+            </field>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="numbercall">-1</field>
+            <field eval="False" name="doall"/>
+        </record>
+
+        <record forcecreate="True" id="ir_cron_irina_chat_2_before" model="ir.cron">
+            <field name="name">Notificación 2 horas antes con Irina</field>
+            <field name="model_id" ref="model_calendar_event"/>
+            <field name="state">code</field>
+            <field name="code">
+current_date = datetime.datetime.now() - datetime.timedelta(minutes=30)
+date_offset = current_date + datetime.timedelta(hours=2)
+events = self.env["calendar.event"].sudo().search([("start_date",">=",current_date),("start_date","&lt;",date_offset)])
+model.notify_irina_one_day_before(events)
+            </field>
+            <field name="user_id" ref="base.user_root"/>
+            <field name="interval_number">1</field>
+            <field name="interval_type">hours</field>
+            <field name="numbercall">-1</field>
+            <field eval="False" name="doall"/>
+        </record>
+    </data>
+</odoo>
