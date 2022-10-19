@@ -136,6 +136,9 @@ class SaleOrder(models.Model):
 
     def copy_error_order(self):
         sale_order_id = self.copy()
+        error_lines = sale_order_id.order_line.filtered(lambda line: not line.x_is_error_line)
+        for error_line in error_lines:
+            sale_order_id.order_line = [(2,error_line.id)]
         sale_order_id.x_error_order = self.id
         sale_order_id.folio_pedido = self.folio_pedido
         sale_order_id.estatus_crm = self.estatus_crm
@@ -152,4 +155,6 @@ class SaleOrder(models.Model):
             'target': 'current',
             'res_id': sale_order_id.id
         }
+
+
 

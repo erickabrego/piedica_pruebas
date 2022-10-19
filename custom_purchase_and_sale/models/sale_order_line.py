@@ -5,6 +5,7 @@ class SaleOrderLine(models.Model):
 
     x_shapelist_domian_ids = fields.Many2one(comodel_name="prod.shape.list", string="Lista de molde")
     x_is_custom = fields.Boolean(string="Es custom", related="product_id.is_custom")
+    x_is_error_line = fields.Boolean(string="Con error?")
 
     @api.onchange("product_id")
     def _get_shapelist_domain(self):
