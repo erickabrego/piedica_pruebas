@@ -7,29 +7,35 @@
            <field name="inherit_id" ref="sale.view_order_form"/>
            <field name="arch" type="xml">
                <xpath expr="//button[@name='action_cancel']" position="after">
+                   <field name="x_has_factory_rule" invisible="1"/>
                    <button string="Crear orden por error" name="send_error_to_crm" type="object" class="btn btn-secondary" attrs="{'invisible': ['|',('folio_pedido','=',False),('state','not in',['sale','done'])]}"/>
+               </xpath>
+               <xpath expr="//button[@name='resend_to_crm']" position="attributes">
+                   <attribute name="attrs">{'invisible': ['|','|',('x_has_factory_rule','=',False),('folio_pedido','!=',False),('state','not in',['sale','done'])]}</attribute>
+               </xpath>
+               <xpath expr="//field[@name='estatus_crm']" position="attributes">
+                   <attribute name="attrs">{'invisible':[('x_has_factory_rule','=',False)]}</attribute>
+               </xpath>
+               <xpath expr="//field[@name='folio_pedido']" position="attributes">
+                   <attribute name="attrs">{'invisible':[('x_has_factory_rule','=',False)]}</attribute>
                </xpath>
                <xpath expr="//field[@name='client_order_ref']" position="after">
                    <field name="x_branch_order_id"/>
                    <field name="x_error_order" attrs="{'invisible':[('x_error_order','=',False)]}"/>
                </xpath>
-<!--               <xpath expr="//field[@name='payment_term_id']" position="after">-->
-<!--                   <field name="x_status_error_crm" domain="[('name','like','Error')]" options="{'no_create':True}"/>-->
-<!--               </xpath>-->
                <xpath expr="//field[@name='mid_layer_id']" position="after">
                    <field name="x_is_custom" invisible="1"/>
-                   <field name="x_shapelist_domian_ids" attrs="{'readonly': [('x_is_custom','=',False)]}"/>
-                   <field name="x_is_error_line" optional="hide"/>
+                   <field name="x_shapelist_domian_ids" attrs="{'readonly': [('x_is_custom','=',False)],'column_invisible':[('parent.x_has_factory_rule','=',False)]}"/>
+                   <field name="x_is_error_line" optional="hide" attrs="{'column_invisible': [('parent.x_has_factory_rule','=',False)]}"/>
                </xpath>
                <xpath expr="//field[@name='main_layer_id']" position="attributes">
-                   <attribute name="attrs">{'readonly': [('x_is_custom','=',False)]}</attribute>
+                   <attribute name="attrs">{'readonly': [('x_is_custom','=',False)],'column_invisible':[('parent.x_has_factory_rule','=',False)]}</attribute>
                </xpath>
                <xpath expr="//field[@name='mid_layer_id']" position="attributes">
-                   <attribute name="attrs">{'readonly': [('x_is_custom','=',False)]}</attribute>
+                   <attribute name="attrs">{'readonly': [('x_is_custom','=',False)],'column_invisible':[('parent.x_has_factory_rule','=',False)]}</attribute>
                </xpath>
-
-               <xpath expr="//field[@name='price_total']" position="after">
-                   <attribute name="attrs">{'readonly': [('x_is_custom','=',False)]}</attribute>
+               <xpath expr="//field[@name='top_cover_id']" position="attributes">
+                   <attribute name="attrs">{'column_invisible':[('parent.x_has_factory_rule','=',False)]}</attribute>
                </xpath>
            </field>
        </record>

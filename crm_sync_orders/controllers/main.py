@@ -40,15 +40,10 @@ class MainController(Controller):
     @route('/sync-orders', type='json', auth='none')
     def create_orders(self, **kwargs):
         sale_order_obj = request.env['sale.order'].sudo()
-        
-        
         args_status = self.validate_create_data(kwargs)
-
         if args_status['status'] == 'error':
             return args_status
-
         result = sale_order_obj.create_crm_order(args_status['content'])
-
         return result
 
 
@@ -59,26 +54,18 @@ class MainController(Controller):
                 'status': 'error',
                 'message': 'El id de la orden de venta debe ser un valor numérico. Valor introducido: %s' % str(id)
             }
-
         order = request.env['sale.order'].sudo().search([('id', '=', id)])
-
         if not order:
             return {
                 'status': 'error',
                 'message': 'No se encontró la orden de venta con el id %s' % id
             }
-
-        
         args_status = self.validate_update_data(kwargs, int(id))
-
         if args_status['status'] == 'error':
             return args_status
-        
 
         result = order.update_estatus_crm(args_status['content'])
-
         return result
-
 
     def validate_create_data(self, args):
         product_product_obj = request.env['product.product'].sudo()
@@ -575,7 +562,6 @@ class MainController(Controller):
         
         #Indicadores de estatus para añadir material o modificar el envio
         data.update({'add_materials':add_materials, 'is_send': is_send})
-
 
         return {
             'status': 'success',

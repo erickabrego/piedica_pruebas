@@ -12,6 +12,13 @@ class SaleOrder(models.Model):
     x_status_error_crm = fields.Many2one(comodel_name="crm.status", string="Estado de error", copy=False)
     x_from_error_order = fields.Boolean(string="Proveniente de orden con error", copy=False)
     x_error_order = fields.Many2one(comodel_name="sale.order", string="Orden con error", copy=False)
+    x_has_factory_rule = fields.Boolean(string="Regla de fabrica", compute="_get_has_factory_rule", store=True)
+
+    @api.depends("company_id")
+    def _get_has_factory_rule(self):
+        for rec in self:
+            rule_id = rec.env["branch.factory"].sudo().search([("branch_id.id", "=", rec.company_id.id)], limit=1)
+            rec.x_has_factory_rule = True if rule_id else False
 
     def write(self, values):
         res = super(SaleOrder, self).write(values)
@@ -20,6 +27,13 @@ class SaleOrder(models.Model):
                 if values.get("estatus_crm"):
                     rec.x_branch_order_id.sudo().write({'estatus_crm': values.get("estatus_crm")})
         return res
+
+    def action_confirm(self):        
+        rule_id = self.env["branch.factory"].sudo().search([("branch_id.id", "=", self.company_id.id)], limit=1)
+        if not rule_id:
+            self.p_ask_for_send_to_crm = False
+        return super(SaleOrder, self).action_confirm()
+                
 
     def action_cancel(self):
         res = super(SaleOrder, self).action_cancel()
@@ -31,15 +45,15 @@ class SaleOrder(models.Model):
     def create_estatus_crm(self):
         res = super(SaleOrder, self).create_estatus_crm()
         for rec in self:
-            rec.x_branch_order_id.write({
-                'crm_status_history': [(0, 0, {
-                    'sale_order': self.id,
-                    'status': self.estatus_crm.id,
-                    'date': datetime.datetime.now()
-                })]
-            })
+            if rec.x_branch_order_id:
+                rec.x_branch_order_id.write({
+                    'crm_status_history': [(0, 0, {
+                        'sale_order': self.id,
+                        'status': self.estatus_crm.id,
+                        'date': datetime.datetime.now()
+                    })]
+                })
         return res
-
 
     def create_branch_purchase_order(self, rule_id, mrp_lines):
         if self.partner_id.x_studio_es_paciente and mrp_lines and rule_id:

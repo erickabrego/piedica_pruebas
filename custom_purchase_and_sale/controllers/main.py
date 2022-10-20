@@ -8,8 +8,6 @@ class MainController(Controller):
 
     @route('/sync-error-orders/<id>', type='http', auth='none')
     def copy_error_order(self, id, **kwargs):
-        _logger.info("Dentro")
-
         response = []
 
         if not str(id).isnumeric():

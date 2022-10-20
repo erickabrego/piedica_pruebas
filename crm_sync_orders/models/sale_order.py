@@ -321,16 +321,14 @@ class SaleOrder(models.Model):
 
     def _action_cancel(self):
         res = super()._action_cancel()
-
-        url = f"https://crmpiedica.com/api/api.php?id_pedido={self.folio_pedido}&id_etapa=23"
-        token = self.env['ir.config_parameter'].sudo().get_param("crm.sync.token")
-        headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {token}'}
-        response = requests.put(url, headers=headers)
-        self.message_post(body=response.content)
-        crm_status = self.env["crm.status"].search([("code", "=", "23")], limit=1)
-
-        if crm_status:
-            self.write({'estatus_crm': crm_status.id})
-            self.create_estatus_crm()
-
+        if self.folio_pedido:
+            url = f"https://crmpiedica.com/api/api.php?id_pedido={self.folio_pedido}&id_etapa=23"
+            token = self.env['ir.config_parameter'].sudo().get_param("crm.sync.token")
+            headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {token}'}
+            response = requests.put(url, headers=headers)
+            self.message_post(body=response.content)
+            crm_status = self.env["crm.status"].search([("code", "=", "23")], limit=1)
+            if crm_status:
+                self.write({'estatus_crm': crm_status.id})
+                self.create_estatus_crm()
         return res
