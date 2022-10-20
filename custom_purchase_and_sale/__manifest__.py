@@ -8,10 +8,10 @@
         Sincronización con CRM de ventas en sucursal y fabrica.
     """,
     'author': "M22",
-    'website': "http://www.yourcompany.com",
+    'website': "http://m22.mx",
     'category': 'Venta y compra',
     'version': '14.0.1',
-    'depends': ['base','sale_management','purchase','crm_sync_orders','hr','purchase_request'],
+    'depends': ['base','sale_management','purchase','crm_sync_orders','hr','purchase_request','merge_deliveries_bs'],
     'data': [
         'security/ir.model.access.csv',
         'views/branch_factory.xml',
