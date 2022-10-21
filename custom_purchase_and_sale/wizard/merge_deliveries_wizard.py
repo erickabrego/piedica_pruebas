@@ -9,5 +9,5 @@ class MergeDeliveries(models.TransientModel):
         merge_picking = self.env["stock.picking"].sudo().browse(res.get("res_id"))
         if merge_picking:
             merge_picking.x_merge_pickings = self.picking_ids.ids
-            merge_picking.origin = self.picking_ids.mapped("sale_id.name")
+            merge_picking.origin = self.picking_ids.mapped("sale_id.id")
         return res

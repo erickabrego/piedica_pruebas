@@ -13,12 +13,18 @@ class SaleOrder(models.Model):
     x_from_error_order = fields.Boolean(string="Proveniente de orden con error", copy=False)
     x_error_order = fields.Many2one(comodel_name="sale.order", string="Orden con error", copy=False)
     x_has_factory_rule = fields.Boolean(string="Regla de fabrica", compute="_get_has_factory_rule", store=True)
+    x_has_error = fields.Boolean(string="Es una orden con error?")
 
-    @api.depends("company_id")
+    @api.depends("company_id","company_id.x_is_factory")
     def _get_has_factory_rule(self):
         for rec in self:
             rule_id = rec.env["branch.factory"].sudo().search([("branch_id.id", "=", rec.company_id.id)], limit=1)
-            rec.x_has_factory_rule = True if rule_id else False
+            if rule_id:
+                rec.x_has_factory_rule = True
+            elif rec.company_id.x_is_factory:
+                rec.x_has_factory_rule = True
+            else:
+                rec.x_has_factory_rule = False
 
     def write(self, values):
         res = super(SaleOrder, self).write(values)
@@ -37,22 +43,12 @@ class SaleOrder(models.Model):
 
     def action_cancel(self):
         res = super(SaleOrder, self).action_cancel()
-        factory_order = self.env["sale.order"].sudo().search([("x_branch_order_id.id","=",self.id)])
-        if factory_order:
-            factory_order.sudo().action_cancel()
-        return res
-
-    def create_estatus_crm(self):
-        res = super(SaleOrder, self).create_estatus_crm()
-        for rec in self:
-            if rec.x_branch_order_id:
-                rec.x_branch_order_id.write({
-                    'crm_status_history': [(0, 0, {
-                        'sale_order': self.id,
-                        'status': self.estatus_crm.id,
-                        'date': datetime.datetime.now()
-                    })]
-                })
+        if self.x_branch_order_id:
+            self.x_branch_order_id.sudo().action_cancel()
+        else:
+            factory_order = self.env["sale.order"].sudo().search([("x_branch_order_id.id", "=", self.id)], limit=1)
+            if factory_order:
+                factory_order.sudo().action_cancel()
         return res
 
     def create_branch_purchase_order(self, rule_id, mrp_lines):
@@ -134,19 +130,32 @@ class SaleOrder(models.Model):
             return notification
 
     def send_error_to_crm(self):
-        crm_status = self.env["crm.status"].search(['|',('name','=','Error'),("code", "=", "2")], limit=1)
-        url = f"https://crmpiedica.com/api/api.php?id_pedido={self.folio_pedido}&id_etapa={crm_status.id}"
-        token = self.env['ir.config_parameter'].sudo().get_param("crm.sync.token")
-        headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {token}'}
-        response = requests.put(url, headers=headers)
-        self.message_post(body=response.content)
-        self.write({'estatus_crm': crm_status.id})
-        self.create_estatus_crm()
-        factory_order = self.env["sale.order"].sudo().search([("x_branch_order_id.id","=",self.id)], limit=1)
-        if factory_order:
-            factory_order.message_post(body=response.content)
-            factory_order.write({'estatus_crm': crm_status.id})
-            factory_order.create_estatus_crm()
+        if self.order_line.filtered(lambda line: line.x_is_error_line):
+            crm_status = self.env["crm.status"].sudo().search(['|',('name','=','Error'),("code", "=", "2")], limit=1)
+            url = f"https://crmpiedica.com/api/api.php?id_pedido={self.folio_pedido}&id_etapa={crm_status.id}"
+            token = self.env['ir.config_parameter'].sudo().get_param("crm.sync.token")
+            headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {token}'}
+            response = requests.put(url, headers=headers)
+            if self.x_branch_order_id:
+                self.send_crm_status_factory(self.x_branch_order_id, response, crm_status)
+                self.send_crm_status_factory(self, response, crm_status)
+            else:
+                factory_order = self.env["sale.order"].sudo().search([("x_branch_order_id.id", "=", self.id)], limit=1)
+                if factory_order:
+                    self.send_crm_status_factory(factory_order, response, crm_status)
+                self.send_crm_status_factory(self, response, crm_status)
+
+            # self.message_post(body=response.content)
+            # self.write({'estatus_crm': crm_status.id})
+            # self.create_estatus_crm()
+            # self.x_has_error = True
+            # factory_order = self.env["sale.order"].sudo().search([("x_branch_order_id.id","=",self.id)], limit=1)
+            # if factory_order:
+            #     factory_order.sudo().message_post(body=response.content)
+            #     factory_order.sudo().write({'estatus_crm': crm_status.id})
+            #     factory_order.sudo().create_estatus_crm()
+        else:
+            raise ValidationError("No es posible de marcar como error la orden, debido a que no se cuenta con productos con errores.")
 
     def copy_error_order(self):
         sale_order_id = self.copy()
@@ -158,6 +167,7 @@ class SaleOrder(models.Model):
         sale_order_id.estatus_crm = self.estatus_crm
         sale_order_id.x_from_error_order = True
         sale_order_id.crm_status_history = [(0,0,{'status': self.x_status_error_crm.id, 'date': datetime.datetime.now()})]
+        sale_order_id.action_confirm()
         view = self.env.ref('sale.view_order_form')
         return {
             'name': 'Venta por error',
@@ -170,5 +180,7 @@ class SaleOrder(models.Model):
             'res_id': sale_order_id.id
         }
 
-
-
+    def send_crm_status_factory(self, sale_id, response, crm_status):
+        sale_id.sudo().message_post(body=response.content)
+        sale_id.sudo().write({'estatus_crm': crm_status.id})
+        sale_id.sudo().create_estatus_crm()

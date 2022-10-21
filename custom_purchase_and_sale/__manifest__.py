@@ -14,6 +14,7 @@
     'depends': ['base','sale_management','purchase','crm_sync_orders','hr','purchase_request','merge_deliveries_bs'],
     'data': [
         'security/ir.model.access.csv',
+        'views/res_company.xml',
         'views/branch_factory.xml',
         'views/sale_order.xml'
     ],

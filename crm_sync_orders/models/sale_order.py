@@ -325,7 +325,10 @@ class SaleOrder(models.Model):
             url = f"https://crmpiedica.com/api/api.php?id_pedido={self.folio_pedido}&id_etapa=23"
             token = self.env['ir.config_parameter'].sudo().get_param("crm.sync.token")
             headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {token}'}
-            response = requests.put(url, headers=headers)
+            response = requests.patch(url, headers=headers)
+            allow_cancel = bytes(response.content).decode("utf-8")
+            if "Action:false" in allow_cancel:
+                raise UserError("No es posible cancelar ya que el pedido ya esta en una etapa en la que no se puede cancelar")
             self.message_post(body=response.content)
             crm_status = self.env["crm.status"].search([("code", "=", "23")], limit=1)
             if crm_status:

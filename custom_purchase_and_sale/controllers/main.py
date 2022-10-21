@@ -36,3 +36,4 @@ class MainController(Controller):
                 })
 
         return json.dumps(response, indent=2)
+
