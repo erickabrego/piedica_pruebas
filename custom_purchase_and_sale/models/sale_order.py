@@ -13,8 +13,9 @@ class SaleOrder(models.Model):
     x_from_error_order = fields.Boolean(string="Proveniente de orden con error", copy=False)
     x_error_order = fields.Many2one(comodel_name="sale.order", string="Orden con error", copy=False)
     x_has_factory_rule = fields.Boolean(string="Regla de fabrica", compute="_get_has_factory_rule", store=True)
-    x_has_error = fields.Boolean(string="Es una orden con error?")
+    x_has_error = fields.Boolean(string="Es una orden con error?", copy=False)
 
+    #Identificamos si la compañía tiene un regla de sucursal
     @api.depends("company_id","company_id.x_is_factory")
     def _get_has_factory_rule(self):
         for rec in self:
@@ -26,21 +27,31 @@ class SaleOrder(models.Model):
             else:
                 rec.x_has_factory_rule = False
 
+    #El historial de la sucursal es un espejo de la fabrica
     def write(self, values):
         res = super(SaleOrder, self).write(values)
         for rec in self:
             if rec.x_branch_order_id:                
                 if values.get("estatus_crm"):
                     rec.x_branch_order_id.sudo().write({'estatus_crm': values.get("estatus_crm")})
+                if values.get("crm_status_history"):
+                    rec.x_branch_order_id.crm_status_history = [(5, 0, 0)]
+                    for history in rec.crm_status_history.sorted(lambda line: line.date):
+                        data = {
+                            "status": history.status.id,
+                            "date": history.date
+                        }
+                        rec.x_branch_order_id.crm_status_history = [(0, 0, data)]
         return res
 
+    #Se identifica si la orden sigue el flujo de sucursal, sino el flujo es el nativo de Odoo
     def action_confirm(self):        
         rule_id = self.env["branch.factory"].sudo().search([("branch_id.id", "=", self.company_id.id)], limit=1)
         if not rule_id:
             self.p_ask_for_send_to_crm = False
         return super(SaleOrder, self).action_confirm()
                 
-
+    #Se cancelan ambas ordenes cuando es por sucursal
     def action_cancel(self):
         res = super(SaleOrder, self).action_cancel()
         if self.x_branch_order_id:
@@ -51,6 +62,7 @@ class SaleOrder(models.Model):
                 factory_order.sudo().action_cancel()
         return res
 
+    #Se crea la orden de compra si es que no se tiene una regla para hacerlo
     def create_branch_purchase_order(self, rule_id, mrp_lines):
         if self.partner_id.x_studio_es_paciente and mrp_lines and rule_id:
             purchase_data = {
@@ -70,6 +82,7 @@ class SaleOrder(models.Model):
                 purchase_id.order_line = [(0, 0, purchase_line)]
             return purchase_id
 
+    #Se crea la orden de venta dentro de la fabrica dependiendo de la regla
     def create_factory_sale_order(self,rule_id, purchase_id, mrp_lines):
         if not self.partner_id.id_crm:
             raise ValidationError(f"El paciente {self.partner_id} no cuenta con un id de CRM, favor de sincronizar e intentar de nuevo.")
@@ -136,28 +149,25 @@ class SaleOrder(models.Model):
             token = self.env['ir.config_parameter'].sudo().get_param("crm.sync.token")
             headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {token}'}
             response = requests.put(url, headers=headers)
+
             if self.x_branch_order_id:
-                self.send_crm_status_factory(self.x_branch_order_id, response, crm_status)
                 self.send_crm_status_factory(self, response, crm_status)
+                self.x_has_error = True
+                self.x_branch_order_id.x_has_error = True
             else:
                 factory_order = self.env["sale.order"].sudo().search([("x_branch_order_id.id", "=", self.id)], limit=1)
                 if factory_order:
                     self.send_crm_status_factory(factory_order, response, crm_status)
-                self.send_crm_status_factory(self, response, crm_status)
-
-            # self.message_post(body=response.content)
-            # self.write({'estatus_crm': crm_status.id})
-            # self.create_estatus_crm()
-            # self.x_has_error = True
-            # factory_order = self.env["sale.order"].sudo().search([("x_branch_order_id.id","=",self.id)], limit=1)
-            # if factory_order:
-            #     factory_order.sudo().message_post(body=response.content)
-            #     factory_order.sudo().write({'estatus_crm': crm_status.id})
-            #     factory_order.sudo().create_estatus_crm()
+                    factory_order.x_has_error = True
+                self.x_has_error = True
         else:
             raise ValidationError("No es posible de marcar como error la orden, debido a que no se cuenta con productos con errores.")
 
-    def copy_error_order(self):
+    #Copiamos la orden de venta y
+    def copy_error_order(self, kwargs):
+        error_type = kwargs.get("error_type",None)
+        if error_type == "branch_error":
+            pricelist_id = self.env["product.pricelist"].sudo().serach([('id','=',80)])
         sale_order_id = self.copy()
         error_lines = sale_order_id.order_line.filtered(lambda line: not line.x_is_error_line)
         for error_line in error_lines:
@@ -166,20 +176,54 @@ class SaleOrder(models.Model):
         sale_order_id.folio_pedido = self.folio_pedido
         sale_order_id.estatus_crm = self.estatus_crm
         sale_order_id.x_from_error_order = True
-        sale_order_id.crm_status_history = [(0,0,{'status': self.x_status_error_crm.id, 'date': datetime.datetime.now()})]
+        crm_status = self.env["crm.status"].sudo().search(['|', ('name', '=', 'Recibido'), ("code", "=", "8")], limit=1)
+        sale_order_id.crm_status_history = [(0,0,{'status': crm_status.id, 'date': datetime.datetime.now()})]
         sale_order_id.action_confirm()
-        view = self.env.ref('sale.view_order_form')
-        return {
-            'name': 'Venta por error',
-            'type': 'ir.actions.act_window',
-            'view_mode': 'form',
-            'res_model': 'sale.order',
-            'views': [(view.id, 'form')],
-            'view_id': view.id,
-            'target': 'current',
-            'res_id': sale_order_id.id
-        }
 
+        if sale_order_id.x_branch_order_id:
+            order_id = sale_order_id
+        else:
+            order_id = self.env["sale.order"].sudo().search([("x_branch_order_id","=",sale_order_id.id)],limit=1)
+
+        if pricelist_id:
+            if sale_order_id.x_branch_order_id:
+                sale_order_id.x_branch_order_id.pricelist_id = pricelist_id.id
+                sale_order_id.x_branch_order_id.update_prices()
+                sale_order_id.pricelist_id = pricelist_id.id
+                sale_order_id.update_prices()
+            else:
+                factory_order = self.env["sale.order"].sudo().search([("x_branch_order_id","=",sale_order_id.id)],limit=1)
+                if factory_order:
+                    factory_order.pricelist_id.id = pricelist_id.id
+                    factory_order.update_prices()
+                sale_order_id.pricelist_id = pricelist_id.id
+                sale_order_id.update_prices()
+
+        procurement_groups = self.env['procurement.group'].search([('sale_id', 'in', order_id.ids)])
+        mrp_orders = procurement_groups.stock_move_ids.created_production_id
+        mrp_orders_list = []
+
+        res = {
+            'status': 'success',
+            'content': {
+                'sale_order': {
+                    'id': order_id.id,
+                    'name': order_id.name
+                }
+
+            }
+        }
+        if mrp_orders:
+            for mrp_order in mrp_orders:
+                mrp_orders_list.append({
+                    'id': mrp_order.id,
+                    'name': mrp_order.name,
+                    'product_id': mrp_order.product_id.id
+                })
+            res['content']['mrp_orders'] = mrp_orders_list
+        return res
+
+    #Actualiza los status de crm en Odoo tanto para la sucursal y fabrica
     def send_crm_status_factory(self, sale_id, response, crm_status):
         sale_id.sudo().message_post(body=response.content)
         sale_id.sudo().write({'estatus_crm': crm_status.id})

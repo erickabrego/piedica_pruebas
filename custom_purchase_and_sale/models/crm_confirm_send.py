@@ -44,10 +44,6 @@ class CRMConfirmSend(models.TransientModel):
     #Se modifica la función para poder seguir el flujo de crm dentro de odoo por medio de sucursal y fabrica
     def _validate_order_data(self, data):
         if self.x_is_branch_order:
-            # rule_id = self.env["branch.factory"].sudo().search(
-            #     [("branch_id.id", "=", self.x_is_branch_order.company_id.id)], limit=1)
-            # if self.sale_order.x_branch_order_id.partner_shipping_id.id == rule_id.delvery_address:
-
             gender = self.sale_order.x_branch_order_id.partner_id.x_studio_gnero
             data["id_paciente_odoo"] = self.sale_order.x_branch_order_id.partner_id.id
             data["id_paciente_crm"] = self.sale_order.x_branch_order_id.partner_id.id_crm
