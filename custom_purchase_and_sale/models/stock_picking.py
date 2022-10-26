@@ -20,6 +20,9 @@ class StockPicking(models.Model):
                 if sale_id and sale_id.folio_pedido:
                     #Hacemos uso de la api a CRM para marcar como enviado dicha transferencia
                     url = f"https://crmpiedica.com/api/api.php?id_pedido={sale_id.folio_pedido}&id_etapa=6"
+                    token = self.env['ir.config_parameter'].sudo().get_param("crm.sync.token")
+                    headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {token}'}
+                    
 
                     # no. seguimiento
                     if picking_id.carrier_tracking_ref:
@@ -31,9 +34,7 @@ class StockPicking(models.Model):
 
                     crm_status = self.env["crm.status"].search(['|', ('name', '=', 'Enviado'), ("code", "=", "6")], limit=1)
                     if not crm_status.id in sale_id.crm_status_history.mapped("status.id"):
-                        token = self.env['ir.config_parameter'].sudo().get_param("crm.sync.token")
-                        headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {token}'}
-                        response = requests.put(url, headers=headers)
+                        response = requests.patch(url, headers=headers)
 
                         #Agregamos el estatus en la orden de venta y su historial
                         if sale_id.x_branch_order_id:

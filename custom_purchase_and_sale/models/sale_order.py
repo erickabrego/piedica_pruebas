@@ -54,12 +54,19 @@ class SaleOrder(models.Model):
     #Se cancelan ambas ordenes cuando es por sucursal
     def action_cancel(self):
         res = super(SaleOrder, self).action_cancel()
-        if self.x_branch_order_id:
+        crm_status = self.env["crm.status"].sudo().search(['|',('name','=','Cancelado'),("code", "=", "23")], limit=1)
+        if self.x_branch_order_id and self.x_branch_order_id.state != 'cancel':
             self.x_branch_order_id.sudo().action_cancel()
+            if not self.crm_status_history.filtered(lambda line: line.status.id == crm_status.id):
+                self.estatus_crm = crm_status.id
+                self.crm_status_history = [(0,0,{'status': crm_status.id, 'date': datetime.datetime.now()})]
         else:
             factory_order = self.env["sale.order"].sudo().search([("x_branch_order_id.id", "=", self.id)], limit=1)
-            if factory_order:
+            if factory_order and factory_order.state != 'cancel':
                 factory_order.sudo().action_cancel()
+                if not factory_order.crm_status_history.filtered(lambda line: line.status.id == crm_status.id):
+                    factory_order.estatus_crm = crm_status.id
+                    factory_order.crm_status_history = [(0,0,{'status': crm_status.id, 'date': datetime.datetime.now()})]
         return res
 
     #Se crea la orden de compra si es que no se tiene una regla para hacerlo
@@ -167,7 +174,7 @@ class SaleOrder(models.Model):
     def copy_error_order(self, kwargs):
         error_type = kwargs.get("error_type",None)
         if error_type == "branch_error":
-            pricelist_id = self.env["product.pricelist"].sudo().serach([('id','=',80)])
+            pricelist_id = self.env["product.pricelist"].sudo().search([('id','=',80)])
         sale_order_id = self.copy()
         error_lines = sale_order_id.order_line.filtered(lambda line: not line.x_is_error_line)
         for error_line in error_lines:
