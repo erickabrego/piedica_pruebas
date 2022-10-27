@@ -15,7 +15,7 @@ class MainController(Controller):
                 'status': 'error',
                 'message': 'El id de la orden de venta debe ser un valor numérico. Valor introducido: %s' % str(id)
             })
-        order = request.env['sale.order'].sudo().search([('id', '=', id)])
+        order = request.env['sale.order'].sudo().search([('id', '=', id),('x_branch_order_id','!=',False)])
         if not order:
             response.append({
                 'status': 'error',
