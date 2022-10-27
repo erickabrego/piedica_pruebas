@@ -73,3 +73,31 @@ class CalendarEvent(models.Model):
                             archived_oppo.stage_id = stage_id.id
                             archived_oppo.active = True
                             rec["opportunity_id"] = archived_opportunity.id
+
+    def open_default_lead(self):
+        view = self.env.ref('appointment_leads.default_lead_event_view_form')
+        partner_id = self.partner_ids.filtered(lambda partner: partner.x_studio_es_paciente)
+        notification = {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': ("Alerta de oportunidad"),
+                'message': "No hay un paciente dentro de los participantes del evento.",
+                'type': 'warning',
+                'next': {'type': 'ir.actions.act_window_close'},
+            }
+        }
+        if not partner_id:
+            return notification
+        return {
+            'name': 'Oportunidad del paciente',
+            'type': 'ir.actions.act_window',
+            'view_mode': 'form',
+            'res_model': 'default.lead.event',
+            'target': 'new',
+            'views': [[view.id, 'form']],
+            'context': dict(self._context,
+                            default_partner_id=partner_id[0].id if partner_id else False,
+                            default_event_id=self.id,
+            ),
+        }
