@@ -70,8 +70,11 @@ class ResPartner(models.Model):
                 name.remove("")
             patient_vals = {
                 "name": name[0] if self.name else "",
+                "display_name": ' '.join(name) if self.name else "",
                 "email": str(self.email).strip() if self.email else "",
+                "display_email": str(self.email).strip() if self.email else "",
                 "birth_date": self.x_studio_cumpleaos,
+                "display_birth_date": self.x_studio_cumpleaos,
                 "partner_id": self.id
             }
             patient_id = self.env["res.partner.crm.sync"].sudo().create(patient_vals)
@@ -83,7 +86,7 @@ class ResPartner(models.Model):
                 'target': 'new',
                 'res_model': 'res.partner.crm.sync',
                 'name': _("Sincronización Odoo-CRM"),
-                'res_id': patient_id.id,                
+                'res_id': patient_id.id,
                 'views': [(False, 'form')],
             }
 
@@ -146,5 +149,5 @@ class ResPartner(models.Model):
             message_post = f"La creación del contacto fue exitosa."
             self.message_post(body=message_post)
             index_crm = message.index(":")
-            id_crm = message[index_crm+1:-1]            
+            id_crm = message[index_crm+1:-1]
             self.id_crm = id_crm

@@ -12,8 +12,11 @@ class ResPartnerCRMSync(models.TransientModel):
     _description = 'Sincronización con CRM'
 
     name = fields.Char(string="Nombre del paciente")
+    display_name = fields.Char(string="display_name")
     birth_date = fields.Date(string="Fecha de nacimiento")
+    display_birth_date = fields.Date(string="display_birth_date")
     email = fields.Char(string="Correo")
+    display_email = fields.Char(string="display_email")
     patient_ids = fields.One2many("res.partner.crm.sync.line", "patient_id", string="Contactos CRM")
     partner_id = fields.Many2one(comodel_name="res.partner", string="Paciente odoo")
     has_ids = fields.Boolean(string="Tiene lineas", compute="_get_has_ids", store=True)
