@@ -213,11 +213,19 @@ class SaleOrder(models.Model):
         error_type = kwargs.get("error_type",None)
         if error_type == "branch_error":
             pricelist_id = self.env["product.pricelist"].sudo().search([('id','=',80)])
-        sale_order_id = self.copy()
-        branch_order = self.x_branch_order_id.copy()
+        sale_order_id = self.sudo().copy()
+        branch_order = self.x_branch_order_id.sudo().copy()
         sale_order_id.x_branch_order_id = branch_order.id
+        
+        
+        branch_error_lines = branch_order.order_line.filtered(lambda line: line.x_is_error_line)
+        factory_lines = sale_order_id.order_line.filtered(lambda line: line.product_id.id in branch_error_lines.mapped('product_id.id'))
+        for factory_line in factory_lines:
+            factory_line.x_is_error_line = True    
+        
         error_lines = sale_order_id.order_line.filtered(lambda line: not line.x_is_error_line)
         branch_error_lines = branch_order.order_line.filtered(lambda line: not line.x_is_error_line)
+        
         for error_line in error_lines:
             sale_order_id.order_line = [(2,error_line.id)]
         for branch_error_line in branch_error_lines:
@@ -227,12 +235,13 @@ class SaleOrder(models.Model):
         branch_order.x_error_order = self.x_branch_order_id.id
         sale_order_id.folio_pedido = self.folio_pedido
         branch_order.folio_pedido = self.folio_pedido
-        sale_order_id.estatus_crm = self.estatus_crm
-        branch_order.estatus_crm = self.estatus_crm
+        
 
         sale_order_id.x_from_error_order = True
         branch_order.x_from_error_order = True
         crm_status = self.env["crm.status"].sudo().search(['|', ('name', '=', 'Recibido'), ("code", "=", "8")], limit=1)
+        sale_order_id.estatus_crm = crm_status.id
+        branch_order.estatus_crm = crm_status.id
         sale_order_id.crm_status_history = [(0,0,{'status': crm_status.id, 'date': datetime.datetime.now()})]
 
         sale_order_id.sudo().action_confirm()

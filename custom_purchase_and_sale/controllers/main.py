@@ -30,5 +30,5 @@ class MainController(Controller):
                     'status': 'error',
                     'message': f'No fue posible crear la nueva orden a partir del error.'
                 })
-        return json.dumps(response, indent=2)
+        return response
 
