@@ -4,6 +4,8 @@ from odoo import models, fields, api
 from odoo.exceptions import ValidationError
 import datetime
 import requests
+import logging
+_logger = logging.getLogger(__name__)
 
 class SaleOrder(models.Model):
     _inherit = "sale.order"
@@ -161,14 +163,50 @@ class SaleOrder(models.Model):
                 self.send_crm_status_factory(self, response, crm_status)
                 self.x_has_error = True
                 self.x_branch_order_id.x_has_error = True
+                self._send_error_with_mo_crm(self)
             else:
                 factory_order = self.env["sale.order"].sudo().search([("x_branch_order_id.id", "=", self.id)], limit=1)
                 if factory_order:
                     self.send_crm_status_factory(factory_order, response, crm_status)
                     factory_order.x_has_error = True
+                    self._send_error_with_mo_crm(factory_order)
                 self.x_has_error = True
         else:
             raise ValidationError("No es posible de marcar como error la orden, debido a que no se cuenta con productos con errores.")
+
+    def _send_error_with_mo_crm(self, order):
+        url = f"https://crmpiedica.com/api/api.php"
+        token = self.env['ir.config_parameter'].sudo().get_param("crm.sync.token")
+        headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {token}'}
+        data = [
+            {
+                'id_pedido_crm': order.folio_pedido,
+                'observaciones': order.observations,
+                'productos_error': []
+            }
+        ]
+        mrp_orders = self.env['mrp.production'].sudo().search([('origin', '=', order.name)])
+        mrp_orders_list = []
+        error_lines = order.x_branch_order_id.order_line.filtered(lambda line: line.x_is_error_line)
+        factory_lines = order.order_line.filtered(lambda line: line.product_id.id in error_lines.mapped('product_id.id'))
+        for factory_line in factory_lines:
+            factory_line.x_is_error_line = True
+        error_mo = mrp_orders.filtered(lambda mo: mo.product_id.id in error_lines.mapped('product_id.id'))
+        if error_mo:
+            for mrp_order in error_mo:
+                mrp_orders_list.append({
+                    'id_mo_odoo': mrp_order.id,
+                })
+            data[0]['productos_error'] = mrp_orders_list
+
+        #Enviar error a CRM junto con las MO
+        _logger.info('===================ENVIO DE ERROR=================')
+        _logger.info(data)
+        _logger.info('--------------------------------------------------')
+        response = requests.put(url, headers=headers, json=data)
+        order.message_post(body=f"{response.content.decode('utf-8')}")
+        order.x_branch_order_id.message_post(body=f"{response.content.decode('utf-8')}")
+
 
     #Copiamos la orden de venta y
     def copy_error_order(self, kwargs):
