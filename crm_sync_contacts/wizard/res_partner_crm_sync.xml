@@ -7,14 +7,17 @@
             <field name="arch" type="xml">
                 <form string="Sincronización de contactos">
                     <sheet>
+                        <group string="Datos del paciente">
+                            <group>
+                                <field name="display_name" string="Nombre" readonly="1"/>
+                                <field name="display_email" string="Correo electrónico" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="display_birth_date" string="Fecha de nacimiento" readonly="1"/>
+                            </group>
+                        </group>
                         <group>
-                            <group>
-                                <field name="name" readonly="0"/>
-                                <field name="email" readonly="0"/>
-                            </group>
-                            <group>
-                                <field name="birth_date" readonly="0"/>
-                            </group>
+                            <field name="name" string="Buscar" readonly="0"/>
                         </group>
                         <notebook>
                             <page string="Pacientes">
