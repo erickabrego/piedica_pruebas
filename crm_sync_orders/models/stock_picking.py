@@ -21,7 +21,7 @@ class Picking(models.Model):
 
             token = self.env['ir.config_parameter'].sudo().get_param("crm.sync.token")
             headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {token}'}
-            response = requests.put(url, headers=headers)
+            response = requests.patch(url, headers=headers)
             self.sale_id.message_post(body=response.content)
             crm_status = self.env["crm.status"].search([("code", "=", "6")], limit=1)
 
