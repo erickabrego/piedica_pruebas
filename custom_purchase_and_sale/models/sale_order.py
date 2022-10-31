@@ -188,9 +188,11 @@ class SaleOrder(models.Model):
         mrp_orders = self.env['mrp.production'].sudo().search([('origin', '=', order.name)])
         mrp_orders_list = []
         error_lines = order.x_branch_order_id.order_line.filtered(lambda line: line.x_is_error_line)
-        factory_lines = order.order_line.filtered(lambda line: line.product_id.id in error_lines.mapped('product_id.id'))
-        for factory_line in factory_lines:
-            factory_line.x_is_error_line = True
+        
+        for branch_error_line in error_lines:
+            factory_line = self.env["sale.order.line"].sudo().search([('order_id.id','=',order.id),('product_id.id','=',branch_error_line.product_id.id),('x_is_error_line','=',False)],limit=1)
+            factory_line.x_is_error_line = True          
+        
         error_mo = mrp_orders.filtered(lambda mo: mo.product_id.id in error_lines.mapped('product_id.id'))
         if error_mo:
             for mrp_order in error_mo:
@@ -211,17 +213,23 @@ class SaleOrder(models.Model):
     #Copiamos la orden de venta y se confirmar sin generar otra venta en crm
     def copy_error_order(self, kwargs):
         error_type = kwargs.get("error_type",None)
+        error_id = kwargs.get("error_id",None)
         if error_type == "branch_error":
             pricelist_id = self.env["product.pricelist"].sudo().search([('id','=',80)])
+        if not error_id:
+            raise ValidationError("Favor de proporcionar el id del error.")
+        else:
+            crm_status = self.env["crm.status"].sudo().search([('code','=',str(error_id))],limit=1)
+            if not crm_status:
+                raise ValidationError("No se encuentra en la base de datos el id proporcionado.")
         sale_order_id = self.sudo().copy()
         branch_order = self.x_branch_order_id.sudo().copy()
-        sale_order_id.x_branch_order_id = branch_order.id
-        
+        sale_order_id.x_branch_order_id = branch_order.id        
         
         branch_error_lines = branch_order.order_line.filtered(lambda line: line.x_is_error_line)
-        factory_lines = sale_order_id.order_line.filtered(lambda line: line.product_id.id in branch_error_lines.mapped('product_id.id'))
-        for factory_line in factory_lines:
-            factory_line.x_is_error_line = True    
+        for branch_error_line in branch_error_lines:
+            factory_line = self.env["sale.order.line"].sudo().search([('order_id.id','=',sale_order_id.id),('product_id.id','=',branch_error_line.product_id.id),('x_is_error_line','=',False)],limit=1)
+            factory_line.x_is_error_line = True        
         
         error_lines = sale_order_id.order_line.filtered(lambda line: not line.x_is_error_line)
         branch_error_lines = branch_order.order_line.filtered(lambda line: not line.x_is_error_line)
@@ -239,7 +247,6 @@ class SaleOrder(models.Model):
 
         sale_order_id.x_from_error_order = True
         branch_order.x_from_error_order = True
-        crm_status = self.env["crm.status"].sudo().search(['|', ('name', '=', 'Recibido'), ("code", "=", "8")], limit=1)
         sale_order_id.estatus_crm = crm_status.id
         branch_order.estatus_crm = crm_status.id
         sale_order_id.crm_status_history = [(0,0,{'status': crm_status.id, 'date': datetime.datetime.now()})]
