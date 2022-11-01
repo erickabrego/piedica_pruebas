@@ -51,13 +51,10 @@
                         </field>
                     </group>
                 </page>
-            </xpath>
-            <field name="partner_shipping_id" position="after">
-                <field name="branch_id" attrs="{'required': 1}"/>
-            </field>
+            </xpath>            
             <xpath expr="//notebook/page[@name='order_lines']/field/tree/field[@name='name']" position="after">
                 <field name="insole_size"/>
-                <field name="top_cover_id" context="{'default_location_id': 61}"/>
+                <field name="top_cover_id"/>
                 <field name="main_layer_id"/>
                 <field name="mid_layer_id"/>
                 <field name="design_type"/>
