@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from odoo import api, fields, models
+from odoo.exceptions import ValidationError
 import logging
 _logger = logging.getLogger(__name__)
 
@@ -26,16 +27,23 @@ class CalendarEvent(models.Model):
     def write(self, values):
         res = super(CalendarEvent, self).write(values)
         for rec in self:
-            if values.get("x_studio_paciente_asisti_a_cita") and rec.x_studio_paciente_asisti_a_cita and rec.opportunity_id:
+            if values.get("x_studio_paciente_confirm_asistencia") and rec.x_studio_paciente_confirm_asistencia and rec.opportunity_id:
+                crm_stage = self.env["crm.stage"].sudo().search([("name","=","Agenda cita")],limit=1)
+                if crm_stage:
+                    rec.opportunity_id.stage_id = crm_stage.id
+            if values.get("x_studio_paciente_asisti_a_cita") and rec.x_studio_paciente_asisti_a_cita and rec.opportunity_id and not rec.x_studio_paciente_cancel_cita:
                 crm_stage = self.env["crm.stage"].sudo().search([("name","=","Asiste a cita")],limit=1)
                 if crm_stage:
                     rec.opportunity_id.stage_id = crm_stage.id
-            elif values.get("x_personal_schedule_appointment") and rec.x_personal_schedule_appointment == "Sí" and rec.opportunity_id and rec.opportunity_id.stage_id.name == "Agenda cita virtual":
-                crm_stage = self.env["crm.stage"].sudo().search([("name","=","Agenda cita")],limit=1)
-                rec.opportunity_id.stage_id = crm_stage.id
-            elif values.get("x_personal_schedule_appointment") and rec.x_personal_schedule_appointment == "No" and rec.opportunity_id and rec.opportunity_id.stage_id.name == "Agenda cita virtual":
-                crm_stage = self.env["crm.stage"].sudo().search([("name","=","Contactado")],limit=1)
-                rec.opportunity_id.stage_id = crm_stage.id
+            elif values.get("x_studio_paciente_asisti_a_cita") and rec.x_studio_paciente_asisti_a_cita and rec.opportunity_id and rec.x_studio_paciente_cancel_cita:
+                raise ValidationError("La cita ya se encuentra cancelada por el paciente, no es posible marcar como asistió.")
+            if values.get("x_studio_paciente_cancel_cita") and rec.x_studio_paciente_cancel_cita and rec.opportunity_id and not rec.x_studio_paciente_asisti_a_cita:
+                crm_stage = self.env["crm.stage"].sudo().search([("name","=","Cancela cita")],limit=1)
+                if crm_stage:
+                    rec.opportunity_id.stage_id = crm_stage.id
+            elif values.get("x_studio_paciente_cancel_cita") and rec.x_studio_paciente_cancel_cita and rec.opportunity_id and  rec.x_studio_paciente_asisti_a_cita:
+                raise ValidationError("El paciente ya asistio a su cita, no es posible marcar como cancelada.")            
+            
             if values.get("partner_ids"):
                 try:
                     rec.get_opportunity_partner()
@@ -100,4 +108,4 @@ class CalendarEvent(models.Model):
                             default_partner_id=partner_id[0].id if partner_id else False,
                             default_event_id=self.id,
             ),
-        }
+        }      

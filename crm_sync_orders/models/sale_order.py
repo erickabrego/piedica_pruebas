@@ -3,6 +3,8 @@ import requests
 
 from odoo import models, fields, api
 from odoo.exceptions import UserError
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class SaleOrder(models.Model):
@@ -320,13 +322,14 @@ class SaleOrder(models.Model):
 
 
     def _action_cancel(self):
-        res = super()._action_cancel()
         if self.folio_pedido:
             url = f"https://crmpiedica.com/api/api.php?id_pedido={self.folio_pedido}&id_etapa=23"
             token = self.env['ir.config_parameter'].sudo().get_param("crm.sync.token")
             headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {token}'}
             response = requests.patch(url, headers=headers)
             allow_cancel = bytes(response.content).decode("utf-8")
+            _logger.info("RESPUESTA DEL FOLIO A CANCELAR:")
+            _logger.info(response.content)
             if "Action:false" in allow_cancel:
                 raise UserError("No es posible cancelar ya que el pedido ya esta en una etapa en la que no se puede cancelar")
             self.message_post(body=response.content)
@@ -334,4 +337,4 @@ class SaleOrder(models.Model):
             if crm_status:
                 self.write({'estatus_crm': crm_status.id})
                 self.create_estatus_crm()
-        return res
+        return super()._action_cancel()

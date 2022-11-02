@@ -212,14 +212,14 @@ class SaleOrder(models.Model):
 
     #Copiamos la orden de venta y se confirmar sin generar otra venta en crm
     def copy_error_order(self, kwargs):
-        error_type = kwargs.get("error_type",None)
         error_id = kwargs.get("error_id",None)
-        if error_type == "branch_error":
+        status_id = kwargs.get("estatus_crm",None)
+        if error_id == 12:
             pricelist_id = self.env["product.pricelist"].sudo().search([('id','=',80)])
-        if not error_id:
-            raise ValidationError("Favor de proporcionar el id del error.")
+        if not status_id:
+            raise ValidationError("Favor de proporcionar el id estatus de crm.")
         else:
-            crm_status = self.env["crm.status"].sudo().search([('code','=',str(error_id))],limit=1)
+            crm_status = self.env["crm.status"].sudo().search([('code','=',str(status_id))],limit=1)
             if not crm_status:
                 raise ValidationError("No se encuentra en la base de datos el id proporcionado.")
         sale_order_id = self.sudo().copy()
