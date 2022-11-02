@@ -320,18 +320,36 @@ class SaleOrder(models.Model):
 
 
     def _action_cancel(self):
-        res = super()._action_cancel()
         if self.folio_pedido:
-            url = f"https://crmpiedica.com/api/api.php?id_pedido={self.folio_pedido}&id_etapa=23"
-            token = self.env['ir.config_parameter'].sudo().get_param("crm.sync.token")
-            headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {token}'}
-            response = requests.patch(url, headers=headers)
-            allow_cancel = bytes(response.content).decode("utf-8")
-            if "Action:false" in allow_cancel:
-                raise UserError("No es posible cancelar ya que el pedido ya esta en una etapa en la que no se puede cancelar")
-            self.message_post(body=response.content)
-            crm_status = self.env["crm.status"].search([("code", "=", "23")], limit=1)
-            if crm_status:
-                self.write({'estatus_crm': crm_status.id})
-                self.create_estatus_crm()
-        return res
+            # Debido a lo de las ordenes de sucursal y fabrica ligadas, primero
+            # hay que verificar si la otra orden ya ha sido cancelada, para no
+            # hacer la comunicacion con CRM de nuevo
+            already_canceled_at_crm = False
+
+            if self.x_branch_order_id:
+                if self.x_branch_order_id.state == 'cancel':
+                    already_canceled_at_crm = True
+            else:
+                factory_order = self.env["sale.order"].sudo().search([("x_branch_order_id.id", "=", self.id)], limit=1)
+
+                if factory_order and factory_order.state == 'cancel':
+                    already_canceled_at_crm = True
+
+            if not already_canceled_at_crm:
+                url = f"https://crmpiedica.com/api/api.php?id_pedido={self.folio_pedido}&id_etapa=23"
+                token = self.env['ir.config_parameter'].sudo().get_param("crm.sync.token")
+                headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {token}'}
+                response = requests.patch(url, headers=headers)
+                allow_cancel = bytes(response.content).decode("utf-8")
+
+                if "Action:false" in allow_cancel:
+                    raise UserError("No es posible cancelar ya que el pedido ya esta en una etapa en la que no se puede cancelar")
+
+                self.message_post(body=response.content)
+                crm_status = self.env["crm.status"].search([("code", "=", "23")], limit=1)
+
+                if crm_status:
+                    self.write({'estatus_crm': crm_status.id})
+                    self.create_estatus_crm()
+
+        return super()._action_cancel()
