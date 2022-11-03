@@ -33,6 +33,7 @@ class DefaultLeadEvent(models.TransientModel):
         if not self.opportunity_id:
             return notification
         self.event_id.opportunity_id = self.opportunity_id.id
+        self.event_id.opportunity_id.x_calendar_event = self.event_id.id
         notification["params"]["message"] = "La asignación de la oportunidad fue correcta y se cambio de etapa."
         notification["params"]["type"] = "success"
         self.opportunity_id.stage_id = self.stage_id.id

@@ -76,11 +76,13 @@ class CalendarEvent(models.Model):
                         for opportunity_id in opportunity_ids:
                             opportunity_id.stage_id = stage_id.id
                             rec["opportunity_id"] = opportunity_id.id
+                            rec.opportunity_id.x_calendar_event = rec.id
                     if archived_opportunity and stage_id:
                         for archived_oppo in archived_opportunity:
                             archived_oppo.stage_id = stage_id.id
                             archived_oppo.active = True
                             rec["opportunity_id"] = archived_opportunity.id
+                            rec.opportunity_id.x_calendar_event = rec.id
 
     def open_default_lead(self):
         view = self.env.ref('appointment_leads.default_lead_event_view_form')

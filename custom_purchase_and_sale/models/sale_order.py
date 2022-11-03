@@ -227,9 +227,13 @@ class SaleOrder(models.Model):
         sale_order_id.x_branch_order_id = branch_order.id        
         
         branch_error_lines = branch_order.order_line.filtered(lambda line: line.x_is_error_line)
+        
+        for order_line in sale_order_id.order_line:
+            order_line.x_is_error_line = False
+        
         for branch_error_line in branch_error_lines:
             factory_line = self.env["sale.order.line"].sudo().search([('order_id.id','=',sale_order_id.id),('product_id.id','=',branch_error_line.product_id.id),('x_is_error_line','=',False)],limit=1)
-            factory_line.x_is_error_line = True        
+            factory_line.x_is_error_line = True if factory_line else False        
         
         error_lines = sale_order_id.order_line.filtered(lambda line: not line.x_is_error_line)
         branch_error_lines = branch_order.order_line.filtered(lambda line: not line.x_is_error_line)

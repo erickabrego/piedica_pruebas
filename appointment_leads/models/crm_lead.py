@@ -5,6 +5,8 @@ _logger = logging.getLogger(__name__)
 class CRMLead(models.Model):
     _inherit = "crm.lead"
 
+    x_calendar_event = fields.Many2one(comodel_name="calendar.event", string="Reunión")
+
     @api.model
     def create(self, vals_list):
         res = super(CRMLead, self).create(vals_list)

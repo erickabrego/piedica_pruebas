@@ -14,7 +14,7 @@
                                 <field name="partner_id" readonly="1"/>
                             </group>
                             <group>
-                                <field name="opportunity_id" required="1" options="{'no_create':True}" domain="[('partner_id','=',partner_id)]"/>
+                                <field name="opportunity_id" required="1" options="{'no_create':True}" domain="[('partner_id','=',partner_id),('x_calendar_event','=',False)]"/>
                                 <field name="stage_id" required="1" options="{'no_create':True}"/>
                             </group>
                         </group>
