@@ -1,8 +1,8 @@
 {
-    'name': "Google Tag Manager",
-    'summary': "Integra Google Tag Manager en Odoo",
+    'name': "Google Tag Manager - Citas",
+    'summary': "Integra Google Tag Manager en Odoo para registrar citas",
     'description': """
-        Integra Google Tag Manager en Odoo
+        Integra Google Tag Manager en Odoo para registrar citas
     """,
     'category': '',
     'version': '14.0.1',
