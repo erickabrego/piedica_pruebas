@@ -6,8 +6,10 @@
     """,
     'category': '',
     'version': '14.0.1',
-    'depends': ['web'],
+    'depends': ['web', 'website', 'website_calendar'],
     'data': [
-        'views/webclient_templates.xml'
+        'views/assets.xml',
+        'views/res_config_settings_views.xml',
+        'views/website_templates.xml'
     ]
 }
