@@ -17,6 +17,6 @@ class QRCodeController(http.Controller):
         if mrp_order.state not in ['confirmed', 'progress','done']:
             return 'nada por hacer'
 
-        result = mrp_order.operations_next_stage()
+        result = mrp_order.sudo().operations_next_stage()
 
         return result

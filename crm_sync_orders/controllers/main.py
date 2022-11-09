@@ -532,7 +532,7 @@ class MainController(Controller):
                                 'message': 'El id del componente debe ser un valor numérico. Valor introducido: %s' % str(component_data['id'])
                             }
 
-                        component = product_product_obj.search([('id', '=', component_data['id'])])
+                        component = product_product_obj.sudo().search([('id', '=', component_data['id'])])
 
                         if not component:
                             return {

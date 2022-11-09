@@ -65,7 +65,7 @@ class CRMConfirmSend(models.TransientModel):
 
         order_data['tipo_orden'] = 2
 
-        sucursal_category = self.env['res.partner.category'].search([('name', '=', 'Sucursal')])
+        sucursal_category = self.env['res.partner.category'].sudo().search([('name', '=', 'Sucursal')])
 
         if (sucursal_category) and (sucursal_category[0] in self.sale_order.partner_shipping_id.category_id):
             order_data['tipo_orden_envio'] = 1
@@ -123,7 +123,7 @@ class CRMConfirmSend(models.TransientModel):
         }
 
         for line in self.sale_order.order_line.filtered(lambda line: 'Fabricar' in line.product_id.route_ids.mapped('name') and line.product_uom_qty == 1):
-            mrp_order = self.env['stock.move'].search([('sale_line_id', '=', line.id)]).created_production_id
+            mrp_order = self.env['stock.move'].sudo().search([('sale_line_id', '=', line.id)]).created_production_id
 
             #Marcar como hecho fabricaciones hijas
             if mrp_order:
@@ -150,7 +150,7 @@ class CRMConfirmSend(models.TransientModel):
 
     def _validate_order_data(self, data):
         order_data = data
-        sucursal_category = self.env['res.partner.category'].search([('name', '=', 'Sucursal')])
+        sucursal_category = self.env['res.partner.category'].sudo().search([('name', '=', 'Sucursal')])
 
         # Datos de la orden
         if not order_data['datos_envio']['datos_pedido']['observaciones']:

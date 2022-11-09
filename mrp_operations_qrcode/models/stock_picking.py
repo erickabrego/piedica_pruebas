@@ -25,21 +25,21 @@ class StockPicking(models.Model):
 
         for move in self.move_ids_without_package:
             if move.sale_line_id.id == sale_order_line_id:
-                move.write({'quantity_done': qty_done})
+                move.sudo().write({'quantity_done': qty_done})
 
-                mrp_done_ids = self.env["mrp.production"].search([("origin","=",self.sale_id.name)])
+                mrp_done_ids = self.env["mrp.production"].sudo().search([("origin","=",self.sale_id.name)])
 
                 if len(mrp_done_ids) == len(mrp_done_ids.filtered(lambda order_mrp: order_mrp.state == 'done' and order_mrp.p_to_send)):
-                    crm_status = self.env["crm.status"].search([("code", "=", "24")], limit=1)
+                    crm_status = self.env["crm.status"].sudo().search([("code", "=", "24")], limit=1)
 
                     if crm_status:
                         self.sale_id.write({'estatus_crm': crm_status.id})
-                        self.sale_id.create_estatus_crm()
+                        self.sale_id.sudo().create_estatus_crm()
 
                         url = f"https://crmpiedica.com/api/api.php?id_pedido={self.sale_id.folio_pedido}&id_etapa=1"
                         token = self.env['ir.config_parameter'].sudo().get_param("crm.sync.token")
                         headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {token}'}
                         response = requests.patch(url, headers=headers)
-                        self.sale_id.message_post(body=response.content)
+                        self.sale_id.sudo().message_post(body=response.content)
 
                 break

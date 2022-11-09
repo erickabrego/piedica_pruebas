@@ -272,7 +272,7 @@ class SaleOrder(models.Model):
                 sale_order_id.pricelist_id = pricelist_id.id
                 sale_order_id.update_prices()
 
-        mrp_orders = self.env['mrp.production'].search([('origin', '=',sale_order_id.name)])
+        mrp_orders = self.env['mrp.production'].sudo().search([('origin', '=',sale_order_id.name)])
         mrp_orders_list = []
 
         res = {

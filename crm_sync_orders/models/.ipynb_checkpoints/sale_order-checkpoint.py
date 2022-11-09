@@ -7,7 +7,7 @@ from odoo.exceptions import UserError
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
-    branch_id = fields.Many2one('res.partner', string='Sucursal', domain=lambda self: [('category_id', '=', self.env['res.partner.category'].search([('name', '=', 'Sucursal')]).id)])
+    branch_id = fields.Many2one('res.partner', string='Sucursal', domain=lambda self: [('category_id', '=', self.env['res.partner.category'].sudo().search([('name', '=', 'Sucursal')]).id)])
     estatus_crm = fields.Many2one('crm.status', string='Estatus CRM', readonly=True, copy=False)
     folio_pedido = fields.Char('Folio del pedido', readonly=True, copy=False)
     crm_status_history = fields.One2many('crm.status.history', 'sale_order', string='Historial de estatus', readonly=True, copy=False)
@@ -73,7 +73,7 @@ class SaleOrder(models.Model):
             }
         }
 
-        procurement_groups = self.env['procurement.group'].search([('sale_id', 'in', sale_order.ids)])
+        procurement_groups = self.env['procurement.group'].sudo().search([('sale_id', 'in', sale_order.ids)])
         mrp_orders = procurement_groups.stock_move_ids.created_production_id
         mrp_orders_list = []
 
@@ -97,7 +97,7 @@ class SaleOrder(models.Model):
         product_product_obj = self.env['product.product']
 
         for product_data in products:
-            product = product_product_obj.search([('id', '=', product_data['id'])])
+            product = product_product_obj.sudo().search([('id', '=', product_data['id'])])
 
             line_data = {
                 'name': product.name,
@@ -129,7 +129,7 @@ class SaleOrder(models.Model):
     def update_estatus_crm(self, data):
         self.ensure_one()
 
-        self.write({'estatus_crm': self.env['crm.status'].search([('code', '=', data['estatus_crm'])])[0].id})
+        self.write({'estatus_crm': self.env['crm.status'].sudo().search([('code', '=', data['estatus_crm'])])[0].id})
         self.create_estatus_crm()
 
         if data['add_materials']:
@@ -161,12 +161,12 @@ class SaleOrder(models.Model):
             
 
             if is_adjustment:
-                mrp_bom = self.env['mrp.bom'].search([
+                mrp_bom = self.env['mrp.bom'].sudo().search([
                     ('product_tmpl_id', '=', mrp_order.product_tmpl_id.id),
                     ('code', '=', 'Ajuste')
                 ],limit=1)
             else:
-                mrp_bom = self.env['mrp.bom'].search([
+                mrp_bom = self.env['mrp.bom'].sudo().search([
                     ('product_tmpl_id.id', '=', mrp_order.product_tmpl_id.id),
                 ],limit=1)
 
@@ -175,7 +175,7 @@ class SaleOrder(models.Model):
 
             for component_data in mrp_order_data['components']:
                 component = self.env['product.product'].browse(component_data['id'])
-                warehouse_id = self.env["stock.warehouse"].search([("lot_stock_id.id","=",mrp_order.location_src_id.id)],limit=1)
+                warehouse_id = self.env["stock.warehouse"].sudo().search([("lot_stock_id.id","=",mrp_order.location_src_id.id)],limit=1)
 
                 components_data.append((0, 0, {
                     'name': component.name,
@@ -214,7 +214,7 @@ class SaleOrder(models.Model):
             'allowed_company_ids': [self.company_id.id]
         }
 
-        delivery_orders = self.env['stock.picking'].with_context(context).search([('origin', '=', self.name)])
+        delivery_orders = self.env['stock.picking'].with_context(context).sudo().search([('origin', '=', self.name)])
 
         for delivery_order in delivery_orders:
             for line in delivery_order.move_line_ids_without_package:

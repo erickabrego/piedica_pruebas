@@ -57,7 +57,7 @@ class MrpProduction(models.Model):
 
         insole_size = self.procurement_group_id.mrp_production_ids.move_dest_ids.sale_line_id.insole_size
 
-        count = self.get_sequence_sale_order_line(self)
+        count = self.sudo().get_sequence_sale_order_line(self)
 
         order = {
             'id': self.id,
@@ -81,7 +81,7 @@ class MrpProduction(models.Model):
 
         for workorder in self.workorder_ids:
             if workorder.state == 'ready':
-                workorder.button_start()
+                workorder.sudo().button_start()
                 #self.increment_operation_index()
 
                 return {
@@ -103,7 +103,7 @@ class MrpProduction(models.Model):
                 # La orden pasará automáticamente a hecho cuando se hayan
                 # terminado todas las etapas
                 if self.state == 'to_close':
-                    self.button_mark_done()
+                    self.sudo().button_mark_done()
 
                 return {
                     'status': 'success',
@@ -120,8 +120,8 @@ class MrpProduction(models.Model):
             if len(delivery_order) == 1:
                 self.write({'p_to_send': True})
                 sale_line = self.procurement_group_id.mrp_production_ids.move_dest_ids.sale_line_id
-                mrp_done_ids = self.env["mrp.production"].search([("origin","=",sale_line.order_id.name)])
-                delivery_order.add_qty_done_by_sale_line(sale_line.id, self.qty_producing)
+                mrp_done_ids = self.env["mrp.production"].sudo().search([("origin","=",sale_line.order_id.name)])
+                delivery_order.sudo().add_qty_done_by_sale_line(sale_line.id, self.qty_producing)
 
                 # if len(mrp_done_ids) == len(mrp_done_ids.filtered(lambda order_mrp: order_mrp.state == 'done' and order_mrp.p_to_send)):
                 #     #Hacemos uso de la API externa para mandar la información del pedido y su etapa para marcar como enviado

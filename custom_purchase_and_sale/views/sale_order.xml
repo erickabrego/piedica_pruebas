@@ -25,11 +25,16 @@
                    <field name="x_branch_order_id"/>
                    <field name="x_error_order" attrs="{'invisible':[('x_error_order','=',False)]}"/>
                </xpath>
+               
                <xpath expr="//field[@name='mid_layer_id']" position="after">
                    <field name="x_is_custom" invisible="1"/>
                    <field name="x_shapelist_domian_ids" attrs="{'readonly': [('x_is_custom','=',False)],'column_invisible':[('parent.x_has_factory_rule','=',False)]}"/>
-                   <field name="x_is_error_line" optional="hide" attrs="{'column_invisible': [('parent.x_has_factory_rule','=',False)]}"/>
                </xpath>
+
+               <xpath expr="//tree/field[@name='price_total']" position="after">
+                    <field name="x_is_error_line" optional="hide" attrs="{'column_invisible': [('parent.x_has_factory_rule','=',False)]}"/>
+               </xpath>
+
                <xpath expr="//field[@name='main_layer_id']" position="attributes">
                    <attribute name="attrs">{'readonly': [('x_is_custom','=',False)],'column_invisible':[('parent.x_has_factory_rule','=',False)]}</attribute>
                </xpath>

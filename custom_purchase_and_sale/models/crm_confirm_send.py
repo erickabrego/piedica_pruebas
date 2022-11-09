@@ -8,23 +8,23 @@ class CRMConfirmSend(models.TransientModel):
     #Se modifica el flujo para mostrar la pantalla de confirmacion
     def send_to_crm(self):
         if not self.x_is_branch_order:
-            self.sale_order.write({'p_ask_for_send_to_crm':False})
+            self.sale_order.sudo().write({'p_ask_for_send_to_crm':False})
             if self.sale_order.state in ["draft", "sent"]:
-                self.sale_order.action_confirm()
+                self.sale_order.sudo().action_confirm()
         rec = self.sale_order
         mrp_lines = rec.order_line.filtered(lambda line: 'Fabricar' in line.product_id.route_ids.mapped('name'))
         rule_id = rec.env["branch.factory"].sudo().search([("branch_id.id", "=", rec.company_id.id)], limit=1)
         if rule_id:
             purchase_id = (rec.procurement_group_id.stock_move_ids.created_purchase_line_id.order_id | rec.procurement_group_id.stock_move_ids.move_orig_ids.purchase_line_id.order_id).ids
             purchase_id = self.env["purchase.order"].sudo().browse(purchase_id)
-            purchase_id = purchase_id[0] if purchase_id else rec.create_branch_purchase_order(rule_id, mrp_lines)
+            purchase_id = purchase_id[0] if purchase_id else rec.sudo().create_branch_purchase_order(rule_id, mrp_lines)
             if purchase_id:
                 purchase_id.write(
                     {'department_id': rule_id.department_id.id, 'partner_ref': rec.name, 'user_id': rec.user_id.id})
-                purchase_id.button_confirm()
-                sale = rec.create_factory_sale_order(rule_id, purchase_id, mrp_lines)
+                purchase_id.sudo().button_confirm()
+                sale = rec.sudo().create_factory_sale_order(rule_id, purchase_id, mrp_lines)
                 if rec.partner_shipping_id.id != rule_id.delivery_address.id:
-                    rec.picking_ids.action_cancel()
+                    rec.picking_ids.sudo().action_cancel()
                     for line in rec.order_line:
                         purchase_line = purchase_id.order_line.filtered(lambda p_line: p_line.product_id.id == line.product_id.id)
                         for purchase in purchase_line:
@@ -38,7 +38,7 @@ class CRMConfirmSend(models.TransientModel):
             for history in self.sale_order.x_branch_order_id.crm_status_history:
                 self.sale_order.crm_status_history = [(0,0,{'status':history.status.id,'date': history.date})]
             self.sale_order.p_ask_for_send_to_crm = False
-            self.sale_order.action_confirm()
+            self.sale_order.sudo().action_confirm()
             return False
 
     #Se modifica la función para poder seguir el flujo de crm dentro de odoo por medio de sucursal y fabrica

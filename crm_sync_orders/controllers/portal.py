@@ -18,7 +18,7 @@ class CustomerPortal(CustomerPortal):
         domain = ['&', '&', ('partner_id', '=', partner.id), ('date_order', '>', start_date), ('state', 'not in', ['draft', 'cancel'])]
 
         if 'insole_count' in counters:
-            insole_count = SaleOrder.search_count(domain) if SaleOrder.check_access_rights('read', raise_exception=False) else 0
+            insole_count = SaleOrder.sudo().search_count(domain) if SaleOrder.check_access_rights('read', raise_exception=False) else 0
             values['insole_count'] = insole_count
 
         return values

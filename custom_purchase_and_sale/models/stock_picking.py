@@ -32,7 +32,7 @@ class StockPicking(models.Model):
                     if picking_id.carrier_id:
                         url += '&transportista=' + picking_id.carrier_id.name
 
-                    crm_status = self.env["crm.status"].search(['|', ('name', '=', 'Enviado'), ("code", "=", "6")], limit=1)
+                    crm_status = self.env["crm.status"].sudo().search(['|', ('name', '=', 'Enviado'), ("code", "=", "6")], limit=1)
                     if not crm_status.id in sale_id.crm_status_history.mapped("status.id"):
                         response = requests.patch(url, headers=headers)
 
