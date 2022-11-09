@@ -9,11 +9,11 @@ class MainController(Controller):
     @route('/get-products', type='http', auth='none')
     def get_materials(self):
         #Obtener materiales
-        materials = request.env['product.product'].sudo().search([("is_material","=",True),("matTopLayer", "=", False)])
+        materials = request.env['product.product'].sudo().with_company(6).search([("is_material","=",True),("matTopLayer", "=", False)])
         material_list = []
         response = [{'materiales': material_list}]
         for material in materials:
-            qty = sum(request.env["stock.quant"].sudo().search([("location_id.usage","=","internal"),("product_id.id","=",material.id)]).mapped("available_quantity"))
+            qty = sum(request.env["stock.quant"].sudo().with_company(6).search([("location_id.usage","=","internal"),("product_id.id","=",material.id)]).mapped("available_quantity"))
             if qty > 0:
                 data = {
                     "nombre": material.display_name,
@@ -22,11 +22,11 @@ class MainController(Controller):
                 }
                 response[0]["materiales"].append(data)
         #Obtener recubrimientos
-        topcovers = request.env['product.product'].sudo().search([("is_material","=",True),("matTopLayer", "=", True)])
+        topcovers = request.env['product.product'].sudo().with_company(6).search([("is_material","=",True),("matTopLayer", "=", True)])
         topcover_list = []
         response.append({'recubrimientos': topcover_list})
         for topcover in topcovers:
-            qty = sum(request.env["stock.quant"].sudo().search([("location_id.usage","=","internal"),("product_id.id","=",topcover.id)]).mapped("available_quantity"))
+            qty = sum(request.env["stock.quant"].sudo().with_company(6).search([("location_id.usage","=","internal"),("product_id.id","=",topcover.id)]).mapped("available_quantity"))
             if qty > 0:
                 data = {
                     "nombre": topcover.display_name,
