@@ -11,8 +11,7 @@ websiteCalendarForm.include({
     }),
 
     _on_submit_appointment: function (ev) {
-        ev.preventDefault();
-        //if (window.dataLayer) {
+        if (window.dataLayer) {
             var days_of_week = [
                 'domingo', 'lunes', 'martes', 'miércoles', 'jueves',
                 'viernes', 'sábado'
@@ -24,14 +23,14 @@ websiteCalendarForm.include({
             var date_object = new Date(appointment_datetime);
             var day_of_week = days_of_week[date_object.getDay()];
 
-            console.log({
+            window.dataLayer.push({
                 'event': 'cita_registrada',
                 'dia_cita': date,
                 'hora_cita': time,
                 'dia_semana': day_of_week,
                 'sucursal': branch
             });
-        //}
+        }
     }
 });
 
