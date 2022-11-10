@@ -11,18 +11,27 @@ websiteCalendarForm.include({
     }),
 
     _on_submit_appointment: function (ev) {
-        if (window.dataLayer) {
+        ev.preventDefault();
+        //if (window.dataLayer) {
+            var days_of_week = [
+                'domingo', 'lunes', 'martes', 'miércoles', 'jueves',
+                'viernes', 'sábado'
+            ];
+
             var appointment_datetime = $(ev.target).find('input[name="datetime_str"]').first().val();
             var [date, time] = appointment_datetime.split(' ');
             var branch = ev.target.action.match(/(calendar\/)(.*?)(-[0-9]+\/submit)/)[2];
+            var date_object = new Date(appointment_datetime);
+            var day_of_week = days_of_week[date_object.getDay()];
 
-            window.dataLayer.push({
+            console.log({
                 'event': 'cita_registrada',
                 'dia_cita': date,
                 'hora_cita': time,
+                'dia_semana': day_of_week,
                 'sucursal': branch
             });
-        }
+        //}
     }
 });
 
